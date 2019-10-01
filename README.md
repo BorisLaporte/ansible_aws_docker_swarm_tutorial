@@ -2,6 +2,8 @@
 
 ## Introduction
 
+If some of you do not want to write code as we go through the project (even if I strongly recommend it) [here](https://github.com/BorisLaporte/ansible_aws_docker_swarm_tutorial) is my repo containing all the code.
+
 ### Docker swarm
 
 Docker swarm is an orchestration service. Easy to use, it allows us to run our webapps at scale at a production grade. You can see a summary list of its features [here](https://docs.docker.com/engine/swarm/)
@@ -11,6 +13,22 @@ In this tutorial we'll be using [Ansible](https://docs.ansible.com/) to deploy a
 Some ressources from Docker official documentation:
 - https://docs.docker.com/engine/swarm/swarm-tutorial/
 - https://docs.docker.com/get-started/part4/
+
+### Ansible
+
+From the official documentation: *Ansible is an IT automation tool. It can configure systems, deploy software, and orchestrate more advanced IT tasks such as continuous deployments or zero downtime rolling updates. Ansible’s main goals are simplicity and ease-of-use.*
+
+The biggest strength of Ansible is for me its indempotency. Ansible doesn't use a list of `things to do` but a list of `desired state`.
+
+In short, instead of having a statement like *install redis*, you have *I need to have redis*.
+- If redis isn't installed, install it
+- If redis is already installed, do nothing
+
+When running an ansible script you'll see **statuses** such as `ok`, `changed` or `skipping`.
+
+- `ok`: nothing has been done, either the task has nothing to do, or we just set a fact.
+- `changed`: A command has been run to meet the desired state.
+- `skipping`: 
 
 ## Setup and deploy ec2
 
@@ -35,7 +53,7 @@ pip install ansible boto boto3 botocore
 Here are the versions I have while I'm writting this.
 
 ```bash
-(ansible-tutorial) [seelker@krillin-will-survive I_setup_project]$ pip freeze | grep -E "boto3|boto|botocore|ansible"
+[goku@vegeta tutorial]$ pip freeze | grep -E "boto3|boto|botocore|ansible"
 ansible==2.8.5
 boto==2.49.0
 boto3==1.9.233
@@ -377,7 +395,7 @@ Please fill the `VPC_ID` and `SUBNET_ID` vars with the `vpc_id` and the `subnet_
 Your current project structure should look like this now.
 
 ```bash
-ansible-tutorial) [seelker@krillin-will-survive I_setup_project]$ tree
+[goku@vegeta tutorial]$ tree
 .
 ├── create_ec2_playbook.yml
 ├── tasks
@@ -541,7 +559,7 @@ To check everything is setup correctly we'll write a little playbook. **Note** t
 Our current project structure should look like this:
 
 ```bash
-(ansible-tutorial) [seelker@krillin-will-survive I_setup_project]$ tree
+[goku@vegeta tutorial]$ tree
 .
 ├── ansible.cfg
 ├── create_ec2_playbook.yml
@@ -814,7 +832,7 @@ Our `Swarm cluser` should be ready. To check it let's connect to it by ssh.
 (Optional) If you're too lazy to check your `Swarm manager node's ip` upper or from the aws console you can run this command:
 
 ```bash
-inventory/ec2.py --list | grep tag_SwarmType_manager -A 2
+[goku@vegeta tutorial]$ inventory/ec2.py --list | grep tag_SwarmType_manager -A 2
 
 # output
 "tag_SwarmType_manager": [
@@ -825,7 +843,7 @@ inventory/ec2.py --list | grep tag_SwarmType_manager -A 2
 
 ```bash
 # ajust ~/.ssh/ansible_tutorial.pem if needed
-(ansible-tutorial) [seelker@krillin-will-survive I_setup_project]$ ssh -i ~/.ssh/ansible_tutorial.pem admin@34.242.96.200
+[goku@vegeta tutorial]$ ssh -i ~/.ssh/ansible_tutorial.pem admin@34.242.96.200
 
 admin@ip-172-31-8-57:~$ docker node ls
 
@@ -1040,6 +1058,9 @@ Clean what we have created
 ansible-playbook remove_ec2_playbook.yaml
 ```
 
+## Source project
+
+You can find the finale version of this project on my [repo](https://github.com/BorisLaporte/ansible_aws_docker_swarm_tutorial)
 
 ## Last thoughts
 
