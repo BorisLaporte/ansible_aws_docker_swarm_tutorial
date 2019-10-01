@@ -1,0 +1,3 @@
+---
+KEY_PAIR_NAME: ansible_tutorial
+KEY_PAIR_LOCAL_PATH: "~/.ssh/ansible_tutorial.pem"

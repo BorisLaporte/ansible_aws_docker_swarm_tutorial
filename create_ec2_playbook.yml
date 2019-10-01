@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+    # The vpc_id and subnet_id choosen earlier
+    VPC_ID: "vpc-453c0e23"
+    SUBNET_ID: "subnet-94c0acf2"
+  # Load variables from file
+  vars_files:
+    - vars/ec2.yml
+  tasks:
+      # Include all tasks within file
+    - include_tasks: tasks/create_security_groups.yml
+    - include_tasks: tasks/create_key_pair.yml
+    - include_tasks: tasks/set_fact_ec2_ami.yml
+    - include_tasks: tasks/create_ec2.yml

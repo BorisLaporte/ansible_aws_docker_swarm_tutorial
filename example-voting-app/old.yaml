@@ -1,0 +1,75 @@
+version: "3.7"
+services:
+
+  redis:
+    image: redis:5.0-alpine
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+  db:
+    image: postgres:9.4-alpine
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+  vote:
+    image: dockersamples/examplevotingapp_vote:latest
+    ports:
+      - 5000:80
+    depends_on:
+      - redis
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 3
+      restart_policy:
+        condition: on-failure
+  result:
+    image: dockersamples/examplevotingapp_result:latest
+    ports:
+      - 5001:80
+    depends_on:
+      - db
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 3
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  worker:
+    image: dockersamples/examplevotingapp_worker
+    depends_on:
+      - db
+      - redis
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels: [APP=VOTING]
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints: [node.role == manager]
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8080:8080"
+    stop_grace_period: 1m30s
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+volumes:
+  db-data:

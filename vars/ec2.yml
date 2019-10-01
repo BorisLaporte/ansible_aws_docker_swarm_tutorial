@@ -1,0 +1,20 @@
+---
+- EC2_INSTANCES:
+  - tags:
+      Name: "swarm-manager"
+      SwarmType: manager
+      Swarm: yes
+    group:
+      - swarm
+  - tags:
+      Name: "swarm-worker-a"
+      SwarmType: worker
+      Swarm: yes
+    group:
+      - swarm
+  - tags:
+      Name: "swarm-worker-b"
+      SwarmType: worker
+      Swarm: yes
+    group:
+      - swarm

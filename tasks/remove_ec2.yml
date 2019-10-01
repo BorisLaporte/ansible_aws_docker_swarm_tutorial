@@ -1,0 +1,16 @@
+---
+- name: "set fact: Swarm ec2 instances"
+  # https://docs.ansible.com/ansible/latest/modules/ec2_instance_facts_module.html
+  ec2_instance_facts:
+    filters:
+      "tag:Swarm": "True"
+  register: swarm_ec2
+
+- name: "Removing ec2 instances"
+  # https://docs.ansible.com/ansible/latest/modules/ec2_module.html
+  ec2:
+    instance_ids: "{{ item.instance_id }}"
+    wait: yes
+    state: absent
+  loop: "{{ swarm_ec2.instances }}"
+  when: swarm_ec2.instances != []

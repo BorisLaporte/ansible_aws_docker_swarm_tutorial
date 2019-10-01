@@ -1,0 +1,101 @@
+---
+- name: Ensure dependencies are installed
+  # https://docs.ansible.com/ansible/latest/modules/apt_module.html
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg-agent
+      - software-properties-common
+    state: present
+
+- name: Add Docker apt key
+  # https://docs.ansible.com/ansible/latest/modules/apt_key_module.html
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    state: present
+  register: add_repository_key
+
+- name: Get debian version
+  # https://docs.ansible.com/ansible/latest/modules/command_module.html
+  command: lsb_release -cs
+  register: debian_version_name
+
+- name: Add Docker repository
+  # https://docs.ansible.com/ansible/latest/modules/apt_repository_module.html
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ debian_version_name.stdout }} stable"
+    state: present
+    update_cache: true
+
+- name: Ensure docker is installed
+  # https://docs.ansible.com/ansible/latest/modules/apt_module.html
+  apt:
+    name:
+      # I had network issues with the version 19.03.2
+      # at the moment I write this article 
+      - docker-ce=5:18.09.6~3-0~debian-stretch
+      - docker-ce-cli=5:18.09.6~3-0~debian-stretch
+      - containerd.io=1.2.5-1
+    state: present
+    update_cache: true
+
+- name: Ensure Docker is started and enabled at boot
+  # https://docs.ansible.com/ansible/latest/modules/service_module.html
+  service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Ensure handlers are notified now to avoid firewall conflicts
+  # https://docs.ansible.com/ansible/latest/modules/meta_module.html
+  meta: flush_handlers
+
+- name: "Ensure the user {{ ansible_user }} is part of the docker group"
+  # https://docs.ansible.com/ansible/latest/modules/user_module.html
+  user: 
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+
+#########################################################################################
+#               We install the docker python module as it is recommended                #
+#                   for the docker_swarm module that we will use later                  #
+# https://docs.ansible.com/ansible/latest/modules/docker_swarm_module.html#requirements #
+#########################################################################################
+
+- name: Ensure docker python module and jsondiff are installed
+  # https://docs.ansible.com/ansible/latest/modules/pip_module.html
+  pip:
+    name: 
+      - docker==4.0.1
+      # jsondiff and pyyaml are needed by the docker_stack module
+      - jsondiff
+      - pyyaml
+  register: pip_install_docker
+  ignore_errors: yes
+
+- name: Fetching pip
+  # https://docs.ansible.com/ansible/latest/modules/get_url_module.html
+  get_url:
+    url: https://bootstrap.pypa.io/get-pip.py
+    dest: "/home/{{ ansible_user }}/get-pip.py"
+    mode: u=rwx,g=rwx,o=rx
+  when: pip_install_docker is failed
+
+- name: Installing pip
+  # https://docs.ansible.com/ansible/latest/modules/command_module.html
+  command: "python /home/{{ ansible_user }}/get-pip.py"
+  when: pip_install_docker is failed
+
+- name: Installing docker python module and jsondiff
+  # https://docs.ansible.com/ansible/latest/modules/pip_module.html
+  pip:
+    name: 
+      - docker==4.0.1
+      # jsondiff and pyyaml are needed by the docker_stack module
+      - jsondiff
+      - pyyaml
+  when: pip_install_docker is failed

@@ -1,0 +1,52 @@
+---
+- name: "Trying to create a key pair"
+  # https://docs.ansible.com/ansible/latest/modules/ec2_key_module.html
+  ec2_key:
+    name: "{{ KEY_PAIR_NAME }}"
+    # If it exists do not overwrite
+    force: false
+  register: ansible_tutorial_private_key
+  # Do not stop the playbook if it fails
+  ignore_errors: yes
+
+###############################################################
+# ALL the code below will only run if the key pair is created #
+# look at the "when" keys which controls when to run a task   #
+###############################################################
+
+- name: "Saving private key to {{ KEY_PAIR_LOCAL_PATH }}"
+  # https://docs.ansible.com/ansible/latest/modules/copy_module.html
+  copy:
+    dest: "{{ KEY_PAIR_LOCAL_PATH }}"
+    content: "{{ ansible_tutorial_private_key['key']['private_key'] }}"
+    # Permissions for private key
+    mode: '0600'
+    # We do not want to overwrite a pre existing key
+    force: no
+  # We wish to run another task in case of error
+  register: save_ansible_tutorial_private_key
+  # ONLY run if "ansible_tutorial_private_key" was a success
+  when: ansible_tutorial_private_key.changed == true
+  # Do not stop the playbook if it fails
+  ignore_errors: yes
+
+- name: "Deleting {{ KEY_PAIR_NAME }} since it couldn't be saved"
+  # https://docs.ansible.com/ansible/latest/modules/ec2_key_module.html
+  ec2_key:
+    name: "{{ KEY_PAIR_NAME }}"
+    # Delete it
+    state: absent
+  # ONLY run if the previous tasks didn't write to the file
+  when: ansible_tutorial_private_key.changed == true
+    and save_ansible_tutorial_private_key.changed == false
+  register: delete_key_pair
+
+  # Stop the playbook and mark it as failed
+  # https://docs.ansible.com/ansible/latest/modules/fail_module.html
+- fail:
+    msg: >
+      The file {{ KEY_PAIR_LOCAL_PATH }} already exists but the
+      key pair {{ KEY_PAIR_NAME }} doesn't exists on AWS.
+      Change either the KEY_PAIR_NAME or the KEY_PAIR_LOCAL_PATH
+  # ONLY run if the previous tasks didn't write to the file
+  when: delete_key_pair.changed == true

@@ -1,0 +1,20 @@
+---
+  # we don't connect to any servers, we use the AWS api
+- hosts: localhost
+  # Do not use ssh
+  connection: local
+  # Do not fetch variables from the server (there is none)
+  gather_facts: False
+  tasks:
+
+    - name: "Gathering facts about all subnets and set fact: 'vpc_subnets_facts'"
+      # AWS module to gather facts (variables) about subnets
+      # https://docs.ansible.com/ansible/latest/modules/ec2_vpc_subnet_facts_module.html
+      ec2_vpc_subnet_facts:
+      # Create a fact "vpc_subnets_facts" from the result
+      register: vpc_subnets_facts
+
+    - name: "Printing 'vpc_subnets_facts' fact"
+      # https://docs.ansible.com/ansible/latest/modules/debug_module.html
+      debug:
+        var: vpc_subnets_facts

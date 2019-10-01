@@ -1,0 +1,24 @@
+---
+- name: Creating ec2 instances
+  # https://docs.ansible.com/ansible/latest/modules/ec2_module.html
+  ec2:
+    key_name: "{{ KEY_PAIR_NAME }}"
+    # The security group
+    group: "{{ item.group }}"
+    instance_type: t2.micro
+    image: "{{ debian_ami_id }}"
+    # Wait until the ec2 is created (not running yet)
+    wait: yes
+    # Garanty only 1 ec2 with those count_tags
+    exact_count: 1
+    # Tags to identify uniquely an ec2
+    count_tag:
+      Name: "{{ item.tags.Name }}"
+    # Other tags to attach to the ec2
+    instance_tags: "{{ item.tags }}"
+    # The subnet where to create the ec2
+    vpc_subnet_id: "{{ SUBNET_ID }}"
+    assign_public_ip: yes
+  # Run this tasks for all elements in EC2_INSTANCES
+  loop: "{{ EC2_INSTANCES }}"
+  register: create_ec2

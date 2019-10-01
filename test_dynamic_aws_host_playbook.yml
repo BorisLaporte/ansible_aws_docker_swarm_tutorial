@@ -1,0 +1,7 @@
+---
+  # Run the playbook for all ec2 instances sharing the tag Swarm=True
+- hosts: tag_Swarm_True
+  tasks:
+    - name: "Ping the ec2 with Swarm=True tag"
+      # https://docs.ansible.com/ansible/latest/modules/ping_module.html
+      ping:

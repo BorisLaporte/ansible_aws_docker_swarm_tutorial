@@ -1,0 +1,18 @@
+---
+- name: Copying example voting app's docker-stack.yml file on the server
+  # https://docs.ansible.com/ansible/latest/modules/copy_module.html
+  copy:
+    src: "example-voting-app/docker-stack.yml"
+    dest: "/home/{{ ansible_user }}/docker-stack.yml"
+    owner: admin
+    group: admin
+    mode: u=rw,g=rw,o=r
+    force: yes
+
+- name: Deploying example voting app's stack
+  # https://docs.ansible.com/ansible/latest/modules/docker_stack_module.html
+  docker_stack:
+    state: present
+    name: "{{ STACK_NAME | default('example-voting-app') }}"
+    compose:
+      - "/home/{{ ansible_user }}/docker-stack.yml"

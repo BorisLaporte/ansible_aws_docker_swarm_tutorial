@@ -1,0 +1,22 @@
+---
+- name: "set fact: first Swarm manager host"
+  set_fact:
+    first_swarm_manager_host: "{{ groups['tag_SwarmType_manager'][0] }}"
+
+- name: Joining worker to the swarm
+  # https://docs.ansible.com/ansible/latest/modules/docker_swarm_module.html
+  docker_swarm:
+    state: join
+    timeout: 60
+    # Using PRIVATE IP ADDRESS as they are in the same VPC
+    advertise_addr: >-
+      {{ hostvars[first_swarm_manager_host].ec2_private_ip_address }}:{{ SWARM_PORT | default(2377) }}
+    # hostvars contains all variables related to a host
+    # https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#accessing-information-about-other-hosts-with-magic-variables
+    join_token: >-
+      {{ hostvars[first_swarm_manager_host].join_token_worker }}
+    # Using PRIVATE IP ADDRESS as they are in the same VPC
+    # Take either a variable or the default value for the port
+    # https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html#defaulting-undefined-variables
+    remote_addrs: 
+      - "{{ hostvars[first_swarm_manager_host].ec2_private_ip_address }}:{{ SWARM_PORT | default(2377) }}"

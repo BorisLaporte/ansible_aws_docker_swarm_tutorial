@@ -1,0 +1,16 @@
+---
+- name: "set fact: Debian 9 (Stretch) AMI"
+  # https://docs.ansible.com/ansible/latest/modules/ec2_ami_facts_module.html
+  ec2_ami_facts:
+    # see the full list of filtered elements:
+    # https://eu-west-1.console.aws.amazon.com/ec2/home?region=eu-west-1#Images:visibility=public-images;search=379101102735,debian-stretch-hvm-x86_64-gp2-*;sort=desc:name
+    owners: 379101102735
+    filters:
+      name: "debian-stretch-hvm-x86_64-gp2-*"
+  register: debian_ami
+
+- name: "set fact: get id from Debian 9 (Stretch) AMI"
+  # https://docs.ansible.com/ansible/latest/modules/set_fact_module.html
+  set_fact:
+    # There is many debian AMI, let's take the first
+    debian_ami_id: "{{ debian_ami.images[0].image_id }}"
