@@ -46,27 +46,33 @@ For this project we will need:
 - botocore
 
 ```bash
+
 # install dependencies
 pip install ansible boto boto3 botocore
+
 ```
 
 Here are the versions I have while I'm writting this.
 
 ```bash
+
 [goku@vegeta tutorial]$ pip freeze | grep -E "boto3|boto|botocore|ansible"
 ansible==2.8.5
 boto==2.49.0
 boto3==1.9.233
 botocore==1.12.233
+
 ```
 
 Export in your shell the `AWS_SECRET_ACCESS_KEY`, `AWS_ACCESS_KEY_ID` and `AWS_REGION` variables:
 
 ```bash
+
 export AWS_ACCESS_KEY_ID='YOUR_AWS_API_KEY'
 export AWS_SECRET_ACCESS_KEY='YOUR_AWS_API_SECRET_KEY'
 # I'm currently on eu-west-1
 export AWS_REGION='YOUR_AWS_REGION'
+
 ```
 
 Let's test if everything is good. Create a file `test_ec2_playbook.yml`
@@ -94,17 +100,21 @@ Let's test if everything is good. Create a file `test_ec2_playbook.yml`
       debug:
         var: vpc_subnets_facts
 
+
 ```
 
 Now run it. It'll print all your `subnets` in the region
 
 ```bash
+
 ansible-playbook test_ec2_playbook.yml
+
 ```
 
 If you have something like this, you're all good ! (if you see warnings, ignore them)
 
 ```bash
+
 [...]
                 "id": "subnet-e6bd14bc",
                 "ipv6_cidr_block_association_set": [],
@@ -139,6 +149,7 @@ If you have something like this, you're all good ! (if you see warnings, ignore 
 
 PLAY RECAP *******************************************************************************************************
 localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
 ```
 Choose one `subnet`, write down your `vpc_id` and your `subnet_id`. Here they are `"vpc_id": "vpc-453c0e23"` and `"subnet_id": "subnet-94c0acf2"`. If you have multiples, just select one. We will need it later.
 
@@ -174,16 +185,33 @@ Create a folder `tasks`. Within it create a file named `create_security_groups.y
       Name: swarm
     # Left as it is, we will set the variable later
     vpc_id: "{{ VPC_ID }}"
-    rules: 
+    rules:
       - proto: tcp
         from_port: 22
         to_port: 22
         rule_desc: "Allow ssh from everywhere."
         cidr_ip: 0.0.0.0/0
         cidr_ipv6: ::/0
-      - proto: all
+      - proto: tcp
+        from_port: 2377
+        to_port: 2377
         group_name: swarm
-        rule_desc: "Allow any communication between Swarm nodes."
+        rule_desc: "Cluster management communications."
+      - proto: tcp
+        from_port: 7946
+        to_port: 7946
+        group_name: swarm
+        rule_desc: "Communication among nodes."
+      - proto: udp
+        from_port: 7946
+        to_port: 7946
+        group_name: swarm
+        rule_desc: "Communication among nodes."
+      - proto: udp
+        from_port: 4789
+        to_port: 4789
+        group_name: swarm
+        rule_desc: "Overlay network traffic."
       - proto: tcp
         from_port: 8080
         to_port: 8080
@@ -196,11 +224,10 @@ Create a folder `tasks`. Within it create a file named `create_security_groups.y
         rule_desc: "Open ports for the vote and result apps."
         cidr_ip: 0.0.0.0/0
         cidr_ipv6: ::/0
+
 ```
 
-Here we use the same module twice to create our `security_groups`.
-- **Swarm** allows **ssh (22)** and ANY communication between machines who shares the same group. We will apply it to all servers in the swarm.
-- **http_https** allows **HTTP (80)** and **HTTPS (443)** in order to access our webapp on the swarm. We will apply it to the manager.
+Here we create our `security_group` in order to allow `ssh`, the ports for the `service` we will deploy and the ports needed by `docker swarm` but only limited to the members of the `swarm`.
 
 #### Create key pair (or use prexisting one)
 
@@ -260,6 +287,7 @@ In order to ssh on our servers will we need a **key pair**.
   # ONLY run if the previous tasks didn't write to the file
   when: delete_key_pair.changed == true
 
+
 ```
 
 When you create a **key pair**, AWS gives you the private key :warning: it will only be available once ! :warning: if you don't download it or loose it, the **key pair** becomes useless. 
@@ -291,6 +319,7 @@ There 3 ways those tasks can be triggered:
   set_fact:
     # There is many debian AMI, let's take the first
     debian_ami_id: "{{ debian_ami.images[0].image_id }}"
+
 ```
 
 Those tasks are straightforward. We look for a Debian 9 (Stretch) AMI made by Debian (379101102735) and then take the first.
@@ -326,6 +355,7 @@ We wish to create 3 ec2. 1 will be manager and 2 will be workers. We could do as
   loop: "{{ EC2_INSTANCES }}"
   register: create_ec2
 
+
 ```
 
 Notice the `loop: "{{ EC2_INSTANCES }}"` at the end of the task. It iterates the same module over the content of `EC2_INSTANCES` var.
@@ -339,25 +369,25 @@ Now let's store our `EC2_INSTANCES` variable in a file. Create a folder `vars` a
   - tags:
       Name: "swarm-manager"
       SwarmType: manager
-      SwarmNode: "True"
+      SwarmNode: yes
     group:
       - swarm
-      - http_https
   - tags:
       Name: "swarm-worker-a"
       SwarmType: worker
-      SwarmNode: "True"
+      SwarmNode: yes
     group:
       - swarm
   - tags:
       Name: "swarm-worker-b"
       SwarmType: worker
-      SwarmNode: "True"
+      SwarmNode: yes
     group:
       - swarm
+
 ```
 
-We store only the `tags` and the `security_group` (group) properties as the others are the same for all our ec2.
+We store only the `tags` and the `security_group` (group) properties.
 
 #### Create the playbook
 
@@ -386,6 +416,7 @@ In order to use our new tasks we will create a playbook which includes all 4 of 
     - include_tasks: tasks/create_key_pair.yml
     - include_tasks: tasks/set_fact_ec2_ami.yml
     - include_tasks: tasks/create_ec2.yml
+
 ```
 
 Please fill the `VPC_ID` and `SUBNET_ID` vars with the `vpc_id` and the `subnet_id` we have choosen after running `ansible-playbook test_ec2_playbook.yml`.
@@ -395,6 +426,7 @@ Please fill the `VPC_ID` and `SUBNET_ID` vars with the `vpc_id` and the `subnet_
 Your current project structure should look like this now.
 
 ```bash
+
 [goku@vegeta tutorial]$ tree
 .
 ├── create_ec2_playbook.yml
@@ -408,12 +440,15 @@ Your current project structure should look like this now.
     └── ec2.yml
 
 2 directories, 7 files
+
 ```
 
 Now run it !
 
 ```bash
+
 ansible-playbook create_ec2_playbook.yml
+
 ```
 
 ## Setup Docker swarm cluster
@@ -438,18 +473,23 @@ Create an `inventory` folder at the project root. Within, we will create two fil
 Make `ec2.py` executable to avoid any issues with ansible.
 
 ```bash
+
 chmod +x inventory/ec2.py
+
 ```
 
 Test if the plugin is working as desired (it may take a few moment to get the result)
 
 ```bash
+
 inventory/ec2.py --list
+
 ```
 
 You should see something like this:
 
 ```bash
+
 [...]
        "ec2_tag_Name": "swarm-worker-b",
         "ec2_tag_Swarm": "True",
@@ -486,6 +526,7 @@ You should see something like this:
     "34.255.136.188"
   ]
 }
+
 ```
 
 Here you can see all the different **servers**, **groups** and **variables** available from the plugin.
@@ -500,6 +541,7 @@ if you have any troubles or wish to know more about it, [here](https://aws.amazo
 Now create an `ansible.cfg` file at the root of our project to specify a few defaults.
 
 ```bash
+
 # project/ansible.cfg
 [defaults]
 # (optional) the host check keys from ssh
@@ -509,6 +551,7 @@ host_key_checking=false
 
 # Tells ansible where the inventory files are
 inventory=inventory/
+
 ```
 
 Here I disable `host_key_checking` to remove constraints from this tutorial as it may causes issues. I also define where the `inventory files` are.
@@ -524,6 +567,7 @@ Create a folder `group_vars` and create a file `all.yml` in it. Move your `KEY_P
 ---
 KEY_PAIR_NAME: ansible_tutorial
 KEY_PAIR_LOCAL_PATH: "~/.ssh/ansible_tutorial.pem"
+
 ```
 
 All files within `groups_vars` are read by Ansible depending on the current `group` or `host` currenctly running. Here `all.yml` will be used for **all** `hosts/groups`. This way we ensure those variables are accessible from everywhere
@@ -536,6 +580,7 @@ By default our ec2 can be accessed with the user `root`. To specify Ansible whic
 ---
 ansible_user: admin
 ansible_ssh_private_key_file: "{{ KEY_PAIR_LOCAL_PATH }}"
+
 ```
 
 Those variables will be used ONLY when the `hosts` that belonged to the `ec2` group.
@@ -553,12 +598,14 @@ To check everything is setup correctly we'll write a little playbook. **Note** t
       # https://docs.ansible.com/ansible/latest/modules/ping_module.html
       ping:
 
+
 ```
 
 
 Our current project structure should look like this:
 
 ```bash
+
 [goku@vegeta tutorial]$ tree
 .
 ├── ansible.cfg
@@ -580,17 +627,21 @@ Our current project structure should look like this:
     └── ec2.yml
 
 4 directories, 13 files
+
 ```
 
 Run it (may take a few moments because of the AWS dynamic host)
 
 ```bash
+
 ansible-playbook test_dynamic_aws_host_playbook.yml
+
 ```
 
 If you see something like this everything is working as expected:
 
 ```bash
+
 PLAY [tag_Swarm_True] *********************************************************************************************************************
 
 TASK [Gathering Facts] ********************************************************************************************************************
@@ -607,13 +658,16 @@ PLAY RECAP *********************************************************************
 18.203.135.17              : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 34.240.55.248              : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 34.242.96.200              : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
 ```
 
 Something is wrong if you see something like this:
 
 ```bash
+
 PLAY [tag_Swarm_true] *********************************************************************************************************************
 skipping: no hosts matched
+
 ```
 
 It means either your ec2 aren't online and running or they do not have the tag `Swarm=True` (case sensitive).
@@ -685,13 +739,19 @@ We will install **Docker** on a **Debian 9 (Stretch)**. I've followed the instru
 # https://docs.ansible.com/ansible/latest/modules/docker_swarm_module.html#requirements #
 #########################################################################################
 
-- name: Ensure docker-py is installed
+- name: Ensure docker python module and jsondiff are installed
+  # https://docs.ansible.com/ansible/latest/modules/pip_module.html
   pip:
-    name: docker
+    name: 
+      - docker
+      # jsondiff and pyyaml are needed by the docker_stack module
+      - jsondiff
+      - pyyaml
   register: pip_install_docker
   ignore_errors: yes
 
 - name: Fetching pip
+  # https://docs.ansible.com/ansible/latest/modules/get_url_module.html
   get_url:
     url: https://bootstrap.pypa.io/get-pip.py
     dest: "/home/{{ ansible_user }}/get-pip.py"
@@ -699,13 +759,20 @@ We will install **Docker** on a **Debian 9 (Stretch)**. I've followed the instru
   when: pip_install_docker is failed
 
 - name: Installing pip
+  # https://docs.ansible.com/ansible/latest/modules/command_module.html
   command: "python /home/{{ ansible_user }}/get-pip.py"
   when: pip_install_docker is failed
 
-- name: Installing docker-py
+- name: Installing docker python module and jsondiff
+  # https://docs.ansible.com/ansible/latest/modules/pip_module.html
   pip:
-    name: docker
+    name: 
+      - docker
+      # jsondiff and pyyaml are needed by the docker_stack module
+      - jsondiff
+      - pyyaml
   when: pip_install_docker is failed
+
 ```
 
 
@@ -759,6 +826,7 @@ We will ask Ansible to use the first **Swarm manager node** to init the Swarm. W
     - name: "set fact: join_token_worker"
       set_fact:
         join_token_worker: "{{ join_token_worker_command['stdout'] }}"
+
 ```
 
 
@@ -781,16 +849,15 @@ Our Swarm is initiated, from the **worker nodes**, use the `join token worker` a
     timeout: 60
     # Using PRIVATE IP ADDRESS as they are in the same VPC
     advertise_addr: >-
-      {{ hostvars[first_swarm_manager_host].ec2_private_ip_address }}
+      {{ ec2_private_ip_address }}:2377
     # hostvars contains all variables related to a host
     # https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#accessing-information-about-other-hosts-with-magic-variables
     join_token: >-
       {{ hostvars[first_swarm_manager_host].join_token_worker }}
     # Using PRIVATE IP ADDRESS as they are in the same VPC
-    # Take either a variable or the default value for the port
-    # https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html#defaulting-undefined-variables
     remote_addrs: 
-      - "{{ hostvars[first_swarm_manager_host].ec2_private_ip_address }}:{{ SWARM_PORT | default(2377) }}"
+      - "{{ hostvars[first_swarm_manager_host].ec2_private_ip_address }}:2377"
+
 ```
 
 
@@ -815,13 +882,16 @@ Here we use the `hostvars`. The `hostvars` allows us to access variables from ot
   tasks:
     - include_tasks: tasks/install_docker.yml
     - include_tasks: tasks/join_worker_node.yml
+
 ```
 
 
 Deploy the cluster
 
 ```bash
+
 ansible-playbook deploy_swarm_playbook.yml
+
 ```
 
 
@@ -832,16 +902,19 @@ Our `Swarm cluser` should be ready. To check it let's connect to it by ssh.
 (Optional) If you're too lazy to check your `Swarm manager node's ip` upper or from the aws console you can run this command:
 
 ```bash
+
 [goku@vegeta tutorial]$ inventory/ec2.py --list | grep tag_SwarmType_manager -A 2
 
 # output
 "tag_SwarmType_manager": [
     "34.242.96.200" # <- here
   ],
+
 ```
 
 
 ```bash
+
 # ajust ~/.ssh/ansible_tutorial.pem if needed
 [goku@vegeta tutorial]$ ssh -i ~/.ssh/ansible_tutorial.pem admin@34.242.96.200
 
@@ -852,6 +925,7 @@ ID                            HOSTNAME            STATUS              AVAILABILI
 scqe6rb9h0016g8wmeohfkv32     ip-172-31-5-233     Ready               Active                                  19.03.2
 yhokk5ae4l22ssmpkslqbz4p7 *   ip-172-31-8-57      Ready               Active              Leader              19.03.2
 td9vjq0myikqhr7dzwky8enut     ip-172-31-15-91     Ready               Active                                  19.03.2
+
 ```
 
 ## Deploy service
@@ -860,10 +934,10 @@ We have our Swarm cluster running. It is time to deploy our first service.
 
 I'm using a stack file from the repo https://github.com/dockersamples. Their projects are complex enough for development and testing. We will be using the [docker-stack.yml](https://raw.githubusercontent.com/dockersamples/example-voting-app/master/docker-stack.yml) from the `example-voting-app`. It uses `redis`, `postgres`, an app in `python`, an app in `nodejs`, a worker in `.NET` and even a [visualizer](https://github.com/dockersamples/docker-swarm-visualizer) !.
 
-I've created a `example-voting-app` folder and a `docker-stack.yml` file in it.
+I've created a `example-voting-app` folder and a `docker-compose.yml` file in it.
 
 ```yaml
-# example-voting-app/docker-stack.yml
+# example-voting-app/docker-compose.yml
 version: "3"
 services:
 
@@ -888,7 +962,7 @@ services:
       placement:
         constraints: [node.role == manager]
   vote:
-    image: dockersamples/examplevotingapp_vote:latest
+    image: dockersamples/examplevotingapp_vote:before
     ports:
       - 5000:80
     networks:
@@ -896,13 +970,13 @@ services:
     depends_on:
       - redis
     deploy:
-      replicas: 3
+      replicas: 2
       update_config:
-        parallelism: 3
+        parallelism: 2
       restart_policy:
         condition: on-failure
   result:
-    image: dockersamples/examplevotingapp_result:latest
+    image: dockersamples/examplevotingapp_result:before
     ports:
       - 5001:80
     networks:
@@ -910,9 +984,9 @@ services:
     depends_on:
       - db
     deploy:
-      replicas: 3
+      replicas: 1
       update_config:
-        parallelism: 3
+        parallelism: 2
         delay: 10s
       restart_policy:
         condition: on-failure
@@ -964,20 +1038,24 @@ Create a new task file `deploy_example_voting_app_stack.yml` under `tasks`:
 ```yaml
 # tasks/deploy_example_voting_app_stack.yml
 ---
-- name: Copying example voting app's docker-stack.yml file on the server
+- name: Copying example voting app's docker-compose.yml file on the server
   # https://docs.ansible.com/ansible/latest/modules/copy_module.html
   copy:
-    src: "example-voting-app/docker-stack.yml"
-    dest: "/home/{{ ansible_user }}/docker-stack.yml"
-    owner: admin
-    group: admin
+    src: "example-voting-app/docker-compose.yml"
+    dest: "/home/{{ ansible_user }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: u=rw,g=rw,o=r
+    force: yes
 
 - name: Deploying example voting app's stack
-  # https://docs.ansible.com/ansible/latest/modules/command_module.html
-  command: "docker stack up -c docker-stack.yml {{ STACK_NAME | default('example-voting-app') }}"
-  args:
-    chdir: "/home/{{ ansible_user }}/"
+  # https://docs.ansible.com/ansible/latest/modules/docker_stack_module.html
+  docker_stack:
+    state: present
+    name: "{{ STACK_NAME | default('example_voting_app') }}"
+    compose:
+      - "/home/{{ ansible_user }}/docker-compose.yml"
+
 ```
 
 
@@ -989,6 +1067,7 @@ The playbook `deploy_stack_playbook.yml`
 - hosts: tag_SwarmType_manager[0]
   tasks:
     - include_tasks: tasks/deploy_example_voting_app_stack.yml
+
 ```
 
 
@@ -1016,6 +1095,7 @@ Remove the `ec2`
     state: absent
   loop: "{{ swarm_ec2.instances }}"
   when: swarm_ec2.instances != []
+
 ```
 
 Remove the `security_group`
@@ -1037,6 +1117,7 @@ Remove the `security_group`
     group_id: "{{ item.group_id }}"
     state: absent
   loop: "{{ security_groups.security_groups }}"
+
 ```
 
 The playbook
@@ -1050,12 +1131,15 @@ The playbook
   tasks:
     - include_tasks: tasks/remove_ec2.yml
     - include_tasks: tasks/remove_security_groups.yml
+
 ```
 
 Clean what we have created
 
 ```bash
+
 ansible-playbook remove_ec2_playbook.yaml
+
 ```
 
 ## Source project
