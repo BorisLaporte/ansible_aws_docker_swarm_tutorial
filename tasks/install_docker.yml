@@ -36,9 +36,9 @@
     name:
       # I had network issues with the version 19.03.2
       # at the moment I write this article 
-      - docker-ce=5:18.09.6~3-0~debian-stretch
-      - docker-ce-cli=5:18.09.6~3-0~debian-stretch
-      - containerd.io=1.2.5-1
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
     state: present
     update_cache: true
 
@@ -70,7 +70,7 @@
   # https://docs.ansible.com/ansible/latest/modules/pip_module.html
   pip:
     name: 
-      - docker==4.0.1
+      - docker
       # jsondiff and pyyaml are needed by the docker_stack module
       - jsondiff
       - pyyaml
@@ -94,7 +94,7 @@
   # https://docs.ansible.com/ansible/latest/modules/pip_module.html
   pip:
     name: 
-      - docker==4.0.1
+      - docker
       # jsondiff and pyyaml are needed by the docker_stack module
       - jsondiff
       - pyyaml
