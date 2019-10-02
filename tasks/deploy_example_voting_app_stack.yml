@@ -1,11 +1,11 @@
 ---
-- name: Copying example voting app's docker-stack.yml file on the server
+- name: Copying example voting app's docker-compose.yml file on the server
   # https://docs.ansible.com/ansible/latest/modules/copy_module.html
   copy:
-    src: "example-voting-app/docker-stack.yml"
-    dest: "/home/{{ ansible_user }}/docker-stack.yml"
-    owner: admin
-    group: admin
+    src: "example-voting-app/docker-compose.yml"
+    dest: "/home/{{ ansible_user }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
     mode: u=rw,g=rw,o=r
     force: yes
 
@@ -13,6 +13,6 @@
   # https://docs.ansible.com/ansible/latest/modules/docker_stack_module.html
   docker_stack:
     state: present
-    name: "{{ STACK_NAME | default('example-voting-app') }}"
+    name: "{{ STACK_NAME | default('example_voting_app') }}"
     compose:
-      - "/home/{{ ansible_user }}/docker-stack.yml"
+      - "/home/{{ ansible_user }}/docker-compose.yml"
