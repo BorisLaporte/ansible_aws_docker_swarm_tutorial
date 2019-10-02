@@ -10,13 +10,11 @@
     timeout: 60
     # Using PRIVATE IP ADDRESS as they are in the same VPC
     advertise_addr: >-
-      {{ hostvars[first_swarm_manager_host].ec2_private_ip_address }}:{{ SWARM_PORT | default(2377) }}
+      {{ ec2_private_ip_address }}:2377
     # hostvars contains all variables related to a host
     # https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#accessing-information-about-other-hosts-with-magic-variables
     join_token: >-
       {{ hostvars[first_swarm_manager_host].join_token_worker }}
     # Using PRIVATE IP ADDRESS as they are in the same VPC
-    # Take either a variable or the default value for the port
-    # https://docs.ansible.com/ansible/latest/user_guide/playbooks_filters.html#defaulting-undefined-variables
     remote_addrs: 
-      - "{{ hostvars[first_swarm_manager_host].ec2_private_ip_address }}:{{ SWARM_PORT | default(2377) }}"
+      - "{{ hostvars[first_swarm_manager_host].ec2_private_ip_address }}:2377"

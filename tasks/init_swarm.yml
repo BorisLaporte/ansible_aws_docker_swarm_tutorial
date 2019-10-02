@@ -7,9 +7,10 @@
       # https://docs.ansible.com/ansible/latest/modules/docker_swarm_module.html
       docker_swarm:
         state: present
-        advertise_addr: >-
-          {{ ec2_private_ip_address }}:{{ SWARM_PORT | default(2377) }}
       register: init_swarm
+
+    - debug:
+        var: init_swarm
 
     - name: "set fact: join token worker"
       set_fact:

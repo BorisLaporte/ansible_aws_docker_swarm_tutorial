@@ -19,9 +19,26 @@
         rule_desc: "Allow ssh from everywhere."
         cidr_ip: 0.0.0.0/0
         cidr_ipv6: ::/0
-      - proto: all
+      - proto: tcp
+        from_port: 2377
+        to_port: 2377
         group_name: swarm
-        rule_desc: "Allow any communication between Swarm nodes."
+        rule_desc: "Cluster management communications."
+      - proto: tcp
+        from_port: 7946
+        to_port: 7946
+        group_name: swarm
+        rule_desc: "Communication among nodes."
+      - proto: udp
+        from_port: 7946
+        to_port: 7946
+        group_name: swarm
+        rule_desc: "Communication among nodes."
+      - proto: udp
+        from_port: 4789
+        to_port: 4789
+        group_name: swarm
+        rule_desc: "Overlay network traffic."
       - proto: tcp
         from_port: 8080
         to_port: 8080
