@@ -8,7 +8,7 @@ If some of you do not want to write code as we go through the project (even if I
 
 Docker swarm is an orchestration service. Easy to use, it allows us to run our webapps at scale at a production grade. You can see a summary list of its features [here](https://docs.docker.com/engine/swarm/)
 
-In this tutorial we'll be using [Ansible](https://docs.ansible.com/) to deploy a Swarm cluster of 3 nodes on AWS. 
+In this tutorial we'll be using [Ansible](https://docs.ansible.com/) to deploy a **swarm cluster** of 3 nodes on AWS. 
 
 Some ressources from Docker official documentation:
 - https://docs.docker.com/engine/swarm/swarm-tutorial/
@@ -453,7 +453,7 @@ ansible-playbook create_ec2_playbook.yml
 
 ## Setup Docker swarm cluster
 
-Now that we have our architecture running we wish to deploy a docker swarm cluster. 
+Now that we have our architecture running we wish to deploy a docker **swarm cluster**. 
 
 ### Inventory
 
@@ -468,7 +468,7 @@ If you wish to know more about **inventories** you check the documentation [here
 
 Create an `inventory` folder at the project root. Within, we will create two files:
 - `ec2.py` the AWS core plugin, you can download it [here](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.py)
-- `ec2.ini` the configuration file, I've ajusted one for the tutorial [here](link) or you can download the default one [here](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.ini)
+- `ec2.ini` the configuration file, I've ajusted one for the tutorial [here](https://raw.githubusercontent.com/BorisLaporte/ansible_aws_docker_swarm_tutorial/master/inventory/ec2.py) or you can download the default one [here](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.ini)
 
 Make `ec2.py` executable to avoid any issues with ansible.
 
@@ -638,7 +638,7 @@ ansible-playbook test_dynamic_aws_host_playbook.yml
 
 ```
 
-If you see something like this everything is working as expected:
+If you see something like this everything is working as expected :ok_hand:
 
 ```bash
 
@@ -661,7 +661,7 @@ PLAY RECAP *********************************************************************
 
 ```
 
-Something is wrong if you see something like this:
+Something is wrong if you see something like this :collision:
 
 ```bash
 
@@ -784,7 +784,7 @@ Docker is installed, we can now init the **Swarm** on a **manager node**. Docker
 - On the `workers` use the `join token worker`
 
 
-We will ask Ansible to use the first **Swarm manager node** to init the Swarm. We could specify a specific server but I prefer to just take the first. In a large Swarm cluster you have multiples manager and worker nodes and by taking the first and not a specific server, our script will still be working in case the very server we specified is `unreachable`.
+We will ask Ansible to use the first **Swarm manager node** to init the Swarm. We could specify a specific server but I prefer to just take the first. In a large **swarm cluster** you have multiples `manager` and `worker` nodes and by taking the first our script will still be working in case the very server we specified is `down` for example.
 
 
 ```yaml
@@ -863,7 +863,7 @@ Our Swarm is initiated, from the **worker nodes**, use the `join token worker` a
 
 Here we use the `hostvars`. The `hostvars` allows us to access variables from other hosts, here we take two variables:
 - `join_token_worker` the token given by the first **swarm manager** who allows us to join the Swarm
-- `ec2_private_ip_address` the **private ip address**. Since our servers share the same `subnet` they can communicate by **private ip address**. And our security groups **ONLY** opens the ports to the servers member of the **swarm** security group and this implies communicating by **private ip address**.
+- `ec2_private_ip_address` the **private ip address**. Since our servers share the same `subnet` they can communicate by **private ip address**. And our security groups **ONLY** opens the **Docker ports** to the servers member of the **swarm** security group and this implies communicating by **private ip address**.
 
 ```yaml
 # deploy_swarm_playbook.yml
@@ -886,7 +886,7 @@ Here we use the `hostvars`. The `hostvars` allows us to access variables from ot
 ```
 
 
-Deploy the cluster
+Deploy the cluster :rocket: (if it is `unreachable` wait a bit until the `ec2` get to the `running` state).
 
 ```bash
 
@@ -899,7 +899,7 @@ ansible-playbook deploy_swarm_playbook.yml
 
 Our `Swarm cluser` should be ready. To check it let's connect to it by ssh.
 
-(Optional) If you're too lazy to check your `Swarm manager node's ip` upper or from the aws console you can run this command:
+(Optional) If you're too lazy to check your `Swarm manager node's ip` upper or from the **aws console** you can run this command:
 
 ```bash
 
@@ -930,9 +930,9 @@ td9vjq0myikqhr7dzwky8enut     ip-172-31-15-91     Ready               Active    
 
 ## Deploy service
 
-We have our Swarm cluster running. It is time to deploy our first service.
+We have our **swarm cluster** running. It is time to deploy our first service.
 
-I'm using a stack file from the repo https://github.com/dockersamples. Their projects are complex enough for development and testing. We will be using the [docker-stack.yml](https://raw.githubusercontent.com/dockersamples/example-voting-app/master/docker-stack.yml) from the `example-voting-app`. It uses `redis`, `postgres`, an app in `python`, an app in `nodejs`, a worker in `.NET` and even a [visualizer](https://github.com/dockersamples/docker-swarm-visualizer) !.
+I'm using a stack file from the repo https://github.com/dockersamples. Their projects are complex enough for development and testing. We will be using the [docker-stack.yml](https://raw.githubusercontent.com/dockersamples/example-voting-app/master/docker-stack.yml) from the `example-voting-app`. It uses `redis`, `postgres`, an app in `python`, an app in `nodejs`, a worker in `.NET` and even a [visualizer](https://github.com/dockersamples/docker-swarm-visualizer) !
 
 I've created a `example-voting-app` folder and a `docker-compose.yml` file in it.
 
@@ -1031,8 +1031,6 @@ volumes:
 
 ```
 
-I have just raised the `replicas` attribute to 3 for `result` and `vote` app. In order to have an instance of each app on all nodes. This is in order to avoid to have to deal with which node exposes which app. 
-
 Create a new task file `deploy_example_voting_app_stack.yml` under `tasks`:
 
 ```yaml
@@ -1070,12 +1068,38 @@ The playbook `deploy_stack_playbook.yml`
 
 ```
 
+Deploy ! This is the very last step. :rocket:
+
+```bash
+
+ansible-playbook deploy_stack_playbook.yml
+
+```
+
+Once it's done, you may need to wait 10~20 seconds while waiting for all services to get deployed.
+
+Now you can access your `apps` from any `nodes` :tada: !
+
+(Optional) If you wish the list of all your servers' **public IP address** you can run this.
+
+```bash
+
+inventory/ec2.py --list | grep tag_Swarm_True -A 3
+
+```
+
+Pick any one of them, doesn't matter if it is a `manager` or a `worker` the [mode routing mesh](https://docs.docker.com/v17.09/engine/swarm/ingress/#configure-an-external-load-balancer) does it all for you. We have those apps running:
+- **vote** - port: 5000
+- **result** - port: 5001Deploy 
+- **visualizer** - port: 8080
+
+Here you can try **34.247.175.217:5000** or **54.171.58.51:5001** or even **54.246.233.184:8080**.
 
 ## Clean the tutorial
 
-Here's the `tasks` and `playbook` to delete our `ec2` and `security_group`
+Now that we have accomplished what we wanted, let's clean up our `servers` and `security_groups`. Here are the `tasks` and `playbook` to delete our `ec2` and `security_group`.
 
-Remove the `ec2`
+Remove the `ec2`.
 
 ```yaml
 ---
@@ -1098,7 +1122,7 @@ Remove the `ec2`
 
 ```
 
-Remove the `security_group`
+Remove the `security_group`.
 
 ```yaml
 ---
@@ -1120,7 +1144,7 @@ Remove the `security_group`
 
 ```
 
-The playbook
+The playbook.
 
 ```yaml
 # remove_ec2_playbook.yml
@@ -1134,7 +1158,7 @@ The playbook
 
 ```
 
-Clean what we have created
+Clean it. You wouldn't want to forget you have 3 servers running somewhere on AWS.
 
 ```bash
 
@@ -1146,8 +1170,15 @@ ansible-playbook remove_ec2_playbook.yaml
 
 You can find the finale version of this project on my [repo](https://github.com/BorisLaporte/ansible_aws_docker_swarm_tutorial)
 
-## Last thoughts
+## Last thoughts :smile:
 
-There is many ways to achieve this. This article and this project were written for sharing knowledge and not for production level architecture. If you're looking for more complex projects or [Ansible roles] you can check [Ansible galaxy](https://galaxy.ansible.com).
+There is many ways to achieve this. This article and this project were written for sharing knowledge and not for production level architecture. If you're looking for more complex projects you can check [Ansible galaxy](https://galaxy.ansible.com) for some [roles](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html). In short [roles](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html) are reusable set of `tasks` meant to be used in other `playbooks`. I hope this tutorial will help you understand how **Ansible** works. This is a very powerfull tool that is self documented by nature. Ideal to build your architecture and keep a written document on how it works.
 
-[Ansible galaxy](https://galaxy.ansible.com) is a hub for finding and sharing Ansible content. You can find Docker Swarm roles/examples [here](https://galaxy.ansible.com/search?deprecated=false&keywords=docker%20swarm&order_by=-relevance&page=1).
+### Ansible galaxy
+
+[Ansible galaxy](https://galaxy.ansible.com) is a hub for finding and sharing Ansible content. You can find **Docker Swarm** roles/examples [here](https://galaxy.ansible.com/search?deprecated=false&keywords=docker%20swarm&order_by=-relevance&page=1).
+
+### Docker swarm
+
+At [Seelk](https://www.seelk.co/) we use **Docker swarm** for our architecture. It provides us a resilient and stable architecture who is also easy to maintain.
+If you're interested to know more about **Docker swarm** you can find a very good (tutorial)[https://docs.docker.com/engine/swarm/swarm-tutorial/] on their website.
