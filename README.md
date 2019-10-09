@@ -1107,10 +1107,10 @@ inventory/ec2.py --list | grep tag_Swarm_True -A 3
 
 Pick any one of them, doesn't matter if it is a `manager` or a `worker` the [mode routing mesh](https://docs.docker.com/v17.09/engine/swarm/ingress/#configure-an-external-load-balancer) does it all for you. We have those apps running:
 - **vote** - port: 5000
-- **result** - port: 5001Deploy 
+- **result** - port: 5001
 - **visualizer** - port: 8080
 
-Here you can try **34.247.175.217:5000** or **54.171.58.51:5001** or even **54.246.233.184:8080**.
+On any servers you can access **vote**, **result** and **visualizer** !
 
 ## Clean the tutorial
 
