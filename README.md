@@ -8,12 +8,11 @@ In this tutorial we'll be using [Ansible](https://docs.ansible.com/) to deploy a
 
 From the official documentation: *Ansible is an IT automation tool. It can configure systems, deploy software, and orchestrate more advanced IT tasks such as continuous deployments or zero downtime rolling updates. Ansible’s main goals are simplicity and ease-of-use.*
 
-The biggest strength of [Ansible](https://docs.ansible.com/) is its **indempotency**. [Ansible](https://docs.ansible.com/) doesn't run a list of `commands` but rather a list of `desired state`.
+The biggest strength of [Ansible](https://docs.ansible.com/) is its **indempotency**. [Ansible](https://docs.ansible.com/) doesn't run a list of `commands` but rather a list of `desired states`.
 
-This is an ansible `task` which download a file at a specific `dest` with specific `user permissions`. And in case the file already exists at the desired `dest` it will only replace the file if the contents change.
+This is an ansible `task` which download a file at a specific `dest` with specific `user permissions`. And in case the file already exists at the desired `dest` it will only replace the file if the content has changed.
 
 ```yaml
-
 - name: Fetching super_saiyan.py
   get_url:
     url: https://vegeta.world/super_saiyan.py
@@ -35,7 +34,7 @@ When running an ansible script you'll see **statuses** such as `ok` or `changed`
 
 Docker swarm is an orchestration service. Easy to use, it allows us to run our webapps at scale at a production grade. You can see a summary list of its features [here](https://docs.docker.com/engine/swarm/).
 
-Some ressources from Docker official documentation on how to setup and use DOcker swarm:
+Some ressources from Docker official documentation on how to setup and use Docker swarm:
 - https://docs.docker.com/engine/swarm/swarm-tutorial/
 - https://docs.docker.com/get-started/part4/
 
@@ -56,33 +55,27 @@ For this project we will need:
 - botocore
 
 ```bash
-
 # install dependencies
 pip install ansible boto boto3 botocore
-
 ```
 
-Here are the versions I have while I'm writting this.
+Here are the versions I have while I'm writing this.
 
 ```bash
-
 [goku@vegeta tutorial]$ pip freeze | grep -E "boto3|boto|botocore|ansible"
 ansible==2.8.5
 boto==2.49.0
 boto3==1.9.233
 botocore==1.12.233
-
 ```
 
 Export in your shell the `AWS_SECRET_ACCESS_KEY`, `AWS_ACCESS_KEY_ID` and `AWS_REGION` variables.
 
 ```bash
-
 export AWS_ACCESS_KEY_ID='YOUR_AWS_API_KEY'
 export AWS_SECRET_ACCESS_KEY='YOUR_AWS_API_SECRET_KEY'
 # I'm currently on eu-west-1
 export AWS_REGION='YOUR_AWS_REGION'
-
 ```
 
 Let's test if everything is good. Create a file `test_ec2_playbook.yml`.
@@ -110,21 +103,17 @@ Let's test if everything is good. Create a file `test_ec2_playbook.yml`.
       debug:
         var: vpc_subnets_facts
 
-
 ```
 
-Now run it. It'll print all your `subnets` in the region.
+Now run it. It will print all your `subnets` in the region.
 
 ```bash
-
 ansible-playbook test_ec2_playbook.yml
-
 ```
 
 If you have something like this, you're all good ! (if you see warnings, ignore them).
 
 ```bash
-
 [...]
                 "id": "subnet-e6bd14bc",
                 "ipv6_cidr_block_association_set": [],
@@ -159,7 +148,6 @@ If you have something like this, you're all good ! (if you see warnings, ignore 
 
 PLAY RECAP *******************************************************************************************************
 localhost                  : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-
 ```
 Choose one `subnet`, write down your `vpc_id` and your `subnet_id`. Here they are `"vpc_id": "vpc-453c0e23"` and `"subnet_id": "subnet-94c0acf2"`. If you have multiples, just pick one. We will need them later.
 
@@ -167,7 +155,7 @@ Choose one `subnet`, write down your `vpc_id` and your `subnet_id`. Here they ar
 
 Now we need to deploy our ec2 instances. In our script we will have 4 steps:
 - Create `security_groups`
-- Create a `key pair` (or use prexisting one)
+- Create a `key pair` (or use pre-existing one)
 - Find an `AMI`, in this tutorial we'll use **Debian 9 (Stretch)**
 - Create 3 `ec2`
 
@@ -239,7 +227,7 @@ Create a folder `tasks`. Within it create a file named `create_security_groups.y
 
 Here we create our `security_group` in order to allow `ssh`, the ports for the `service` we will deploy and the ports needed by `docker swarm` but only limited to the members of the `swarm`.
 
-#### Create key pair (or use prexisting one)
+#### Create key pair (or use pre-existing one)
 
 In order to connect by ssh to our servers will we need a **key pair**.
 
@@ -297,15 +285,15 @@ In order to connect by ssh to our servers will we need a **key pair**.
   # ONLY run if the previous tasks didn't write to the file
   when: delete_key_pair.changed == true
 
-
 ```
 
-When you create a **key pair**, AWS gives you the private key :warning: this is the only time you have access to it ! if you don't download it or loose it, the **key pair** becomes useless. 
+When you create a **key pair**, AWS gives you the private key.  
+:warning: This is the only time you have access to it ! if you don't download it or loose it, the **key pair** becomes useless. 
 
 There is 4 ways those `tasks` can be triggered:
 - Neither the key pair nor the file exist. The script will create the key pair and create a file with its private key.
-- The key pair exist and the file too. Nothing is done since this is what we already want.
-- The key pair doesn't exists but the file does. We won't erase the file as we do not know what is contains, we will delete the key pair as we couldn't save the private key and raise an error asking the user to check his variables.
+- The key pair exists and the file too. Nothing is done since this is what we already want.
+- The key pair doesn't exist but the file does. We won't erase the file as we do not know what is contains, we will delete the key pair as we couldn't save the private key and raise an error asking the user to check his variables.
 - The key pair exists but the file doesn't. We will delete the key pair as we can't save the private key and raise an error asking the user to check his variables.
 
 #### Find an AMI Debian 9 (Stretch)
@@ -363,7 +351,6 @@ We wish to create 3 ec2. 1 **manager** and 2 **workers**. We will iterate over a
   # Run this tasks for all elements in EC2_INSTANCES
   loop: "{{ EC2_INSTANCES }}"
   register: create_ec2
-
 
 ```
 
@@ -427,14 +414,13 @@ In order to use our new tasks we will create a **playbook** which includes all 4
 
 ```
 
-Please fill the `VPC_ID` and `SUBNET_ID` vars with the `vpc_id` and the `subnet_id` we have choosen after running `ansible-playbook test_ec2_playbook.yml`.
+Please fill the `VPC_ID` and `SUBNET_ID` vars with the `vpc_id` and the `subnet_id` we have chosen after running `ansible-playbook test_ec2_playbook.yml`.
 
-(optional) If you wish to use a prexisting `key_pair` please change `KEY_PAIR_NAME` to its name on AWS and `KEY_PAIR_LOCAL_PATH` to the local path to the private key on your machine.
+(optional) If you wish to use a pre-existing `key_pair` please change `KEY_PAIR_NAME` to its name on AWS and `KEY_PAIR_LOCAL_PATH` to the local path to the private key on your machine.
 
 Your current project structure should look like this now.
 
 ```bash
-
 [goku@vegeta tutorial]$ tree
 .
 ├── create_ec2_playbook.yml
@@ -448,15 +434,12 @@ Your current project structure should look like this now.
     └── ec2.yml
 
 2 directories, 7 files
-
 ```
 
 Now run it !
 
 ```bash
-
 ansible-playbook create_ec2_playbook.yml
-
 ```
 
 ## Setup Docker swarm cluster
@@ -473,31 +456,25 @@ If you wish to know more about **inventories** you check the documentation [here
 
 #### Ansible and Dynamic Amazon EC2 Inventory Management
 
-
 Create an `inventory` folder at the project root. Within, we will create two files:
 - `ec2.py` the AWS core plugin, you can download it [here](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.py)
-- `ec2.ini` the configuration file, I've ajusted one for the tutorial [here](https://raw.githubusercontent.com/BorisLaporte/ansible_aws_docker_swarm_tutorial/master/inventory/ec2.ini) or you can download the default one [here](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.ini)
+- `ec2.ini` the configuration file, I've adjusted one for the tutorial [here](https://raw.githubusercontent.com/BorisLaporte/ansible_aws_docker_swarm_tutorial/master/inventory/ec2.ini) or you can download the default one [here](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.ini)
 
 Make `ec2.py` executable to avoid any issues with ansible.
 
 ```bash
-
 chmod +x inventory/ec2.py
-
 ```
 
 Test if the plugin is working as desired. It may take a few moment to get the result as the plugin is doing multiples requests on AWS
 
 ```bash
-
 inventory/ec2.py --list
-
 ```
 
 You should see something like this:
 
 ```bash
-
 [...]
        "ec2_tag_Name": "swarm-worker-b",
         "ec2_tag_Swarm": "True",
@@ -534,7 +511,6 @@ You should see something like this:
     "34.255.136.188"
   ]
 }
-
 ```
 
 Here you can see all the different **servers**, **groups** and **variables** available.
@@ -545,11 +521,9 @@ if you have any troubles or wish to know more about it, [here](https://aws.amazo
 
 #### Project setup
 
-
-Now create an `ansible.cfg` file at the root of our project to specify a few defaults.
+Now create an `ansible.cfg` file at the root of our project to specify a few default options.
 
 ```bash
-
 # project/ansible.cfg
 [defaults]
 # (optional) the host check keys from ssh
@@ -565,7 +539,7 @@ inventory=inventory/
 Here we disable `host_key_checking` to remove constraints from this tutorial as it may causes issues (it is security related). We also define where the `inventory files` are.
 
 
-We have setted the `KEY_PAIR_NAME` and `KEY_PAIR_LOCAL_PATH` variables in the `create_ec2_playbook.yml` playbook. But we will need them in our next playbooks. So we'll move them in a variable file.
+We have set the `KEY_PAIR_NAME` and `KEY_PAIR_LOCAL_PATH` variables in the `create_ec2_playbook.yml` playbook. But we will need them in our next playbooks. So we'll move them in a variable file.
 
 
 Create a folder `group_vars` and create a file `all.yml` in it. Move your `KEY_PAIR_NAME` and `KEY_PAIR_LOCAL_PATH` variables in it.
@@ -578,7 +552,7 @@ KEY_PAIR_LOCAL_PATH: "~/.ssh/ansible_tutorial.pem"
 
 ```
 
-All files within `groups_vars` are automatically read by Ansible depending on the current `group` or `host` currenctly running. Here `all.yml` will be used for **all** `hosts` or `groups`. This way we ensure those variables are accessible from everywhere.
+All files within `groups_vars` are automatically read by Ansible depending on the current `group` or `host` currently running. Here `all.yml` will be used for **all** `hosts` or `groups`. This way we ensure those variables are accessible from everywhere.
 
 
 By default our `ec2` can be accessed with the user `admin` (this is related to the AMI we're using). To specify Ansible which user and which private key to use we will create an other file `ec2.yml` in `group_vars`. All **dynamic hosts** from the AWS ec2 plugin are part of the **ec2 group**.
@@ -593,7 +567,6 @@ ansible_ssh_private_key_file: "{{ KEY_PAIR_LOCAL_PATH }}"
 
 Those variables will be used ONLY when the `hosts` that belonged to the **ec2 group**.
 
-
 To check everything is setup correctly we'll write a little playbook. **Note** this test will work only if your servers are **online** and **running**.
 
 ```yaml
@@ -606,14 +579,11 @@ To check everything is setup correctly we'll write a little playbook. **Note** t
       # https://docs.ansible.com/ansible/latest/modules/ping_module.html
       ping:
 
-
 ```
-
 
 Our current project structure should look like this:
 
 ```bash
-
 [goku@vegeta tutorial]$ tree
 .
 ├── ansible.cfg
@@ -635,21 +605,17 @@ Our current project structure should look like this:
     └── ec2.yml
 
 4 directories, 13 files
-
 ```
 
 Run it (may take a few moments because of the AWS dynamic host)
 
 ```bash
-
 ansible-playbook test_dynamic_aws_host_playbook.yml
-
 ```
 
 If you see something like this everything is working as expected :ok_hand:
 
 ```bash
-
 PLAY [tag_Swarm_True] *********************************************************************************************************************
 
 TASK [Gathering Facts] ********************************************************************************************************************
@@ -666,16 +632,13 @@ PLAY RECAP *********************************************************************
 18.203.135.17              : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 34.240.55.248              : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 34.242.96.200              : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-
 ```
 
 Something is wrong if you see something like this :collision:
 
 ```bash
-
 PLAY [tag_Swarm_true] *********************************************************************************************************************
 skipping: no hosts matched
-
 ```
 
 It means either your `ec2` aren't online and running or they do not have the tag `Swarm=True` (case sensitive).
@@ -683,8 +646,7 @@ It means either your `ec2` aren't online and running or they do not have the tag
 
 ### Install Docker
 
-
-We will install **Docker** on a **Debian 9 (Stretch)**. I've followed the instruction from the [official Docker documentation](https://docs.docker.com/install/) and wrote the tasks
+We will install **Docker** on a **Debian 9 (Stretch)**. I've followed the instruction from the [official Docker documentation](https://docs.docker.com/install/) and wrote the tasks.
 
 ```yaml
 # tasks/install_docker.yml
@@ -801,7 +763,7 @@ Docker is installed, we can now init the **Swarm** on a **manager node**. Docker
 - On the `workers` use the `join token worker`
 
 
-We will ask **Ansible** to use the first **Swarm manager node** to init the swarm. We could specify a specific server but I prefer to just take the first. In a large **swarm cluster** you have multiples `manager` and `worker` nodes and by taking the first our script will still be working in case the very server we specified is `down` for example.
+We will ask **Ansible** to use the first **Swarm manager node** to init the swarm. We could specify a specific server but I prefer to just take the first one. In a large **swarm cluster** you have multiple `manager` and `worker` nodes and by taking the first, our script will still be working in case the very server we specified is `down` for example.
 
 
 ```yaml
@@ -877,7 +839,6 @@ Our Swarm is initiated, from the **worker nodes**, use the `join token worker` a
 
 ```
 
-
 Here we use the `hostvars`. The `hostvars` allows us to access variables from other hosts, here we take two variables:
 - `join_token_worker` the token given by the first **swarm manager** who allows us to join the Swarm
 - `ec2_private_ip_address` the **private ip address**. Since our servers share the same `subnet` they can communicate by **private ip address**. And our security groups **ONLY** opens the **Docker ports** to the servers member of the **swarm** security group and this implies communicating by **private ip address**.
@@ -902,13 +863,10 @@ Here we use the `hostvars`. The `hostvars` allows us to access variables from ot
 
 ```
 
-
 Deploy the cluster :rocket: (if it is `unreachable` wait a bit until the `ec2` get to the `running` state).
 
 ```bash
-
 ansible-playbook deploy_swarm_playbook.yml
-
 ```
 
 
@@ -919,19 +877,16 @@ Our `Swarm cluser` should be ready. To check it let's connect to it by ssh.
 (Optional) If you're too lazy to check your `swarm manager node's ip` upper or from the **aws console** you can run this command:
 
 ```bash
-
 [goku@vegeta tutorial]$ inventory/ec2.py --list | grep tag_SwarmType_manager -A 2
 
 # output
 "tag_SwarmType_manager": [
     "34.242.96.200" # <- here
   ],
-
 ```
 
 
 ```bash
-
 # ajust ~/.ssh/ansible_tutorial.pem if needed
 [goku@vegeta tutorial]$ ssh -i ~/.ssh/ansible_tutorial.pem admin@34.242.96.200
 
@@ -942,7 +897,6 @@ ID                            HOSTNAME            STATUS              AVAILABILI
 scqe6rb9h0016g8wmeohfkv32     ip-172-31-5-233     Ready               Active                                  19.03.2
 yhokk5ae4l22ssmpkslqbz4p7 *   ip-172-31-8-57      Ready               Active              Leader              19.03.2
 td9vjq0myikqhr7dzwky8enut     ip-172-31-15-91     Ready               Active                                  19.03.2
-
 ```
 
 ## Deploy service
@@ -1185,11 +1139,11 @@ ansible-playbook remove_ec2_playbook.yaml
 
 ## Source project
 
-You can find the finale version of this project on my [repo](https://github.com/BorisLaporte/ansible_aws_docker_swarm_tutorial)
+You can find the final version of this project on my [repo](https://github.com/BorisLaporte/ansible_aws_docker_swarm_tutorial)
 
 ## Last thoughts :smile:
 
-There is many ways to achieve this. This article and this project were written for sharing knowledge and not for production level architecture. If you're looking for more complex projects you can check [Ansible galaxy](https://galaxy.ansible.com) for some [roles](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html). In short [roles](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html) are reusable set of `tasks` meant to be used in other `playbooks`. I hope this tutorial will help you understand how **Ansible** works. This is a very powerfull tool that is self documented by nature. Ideal to build your architecture and keep a written document on how it works.
+There is many ways to achieve this. This article and this project were written for sharing knowledge and not for production level architecture. If you're looking for more complex projects you can check [Ansible galaxy](https://galaxy.ansible.com) for some [roles](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html). In short [roles](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html) are reusable set of `tasks` meant to be used in other `playbooks`. I hope this tutorial will help you understand how **Ansible** works. This is a very powerful tool that is self documented by nature. Ideal to build your architecture and keep a written document on how it works.
 
 ### Ansible galaxy
 
