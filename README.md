@@ -724,8 +724,6 @@ We will install **Docker** on a **Debian 9 (Stretch)**. I've followed the instru
   # https://docs.ansible.com/ansible/latest/modules/apt_module.html
   apt:
     name:
-      # I had network issues with the version 19.03.2
-      # at the moment I write this article 
       - docker-ce
       - docker-ce-cli
       - containerd.io
@@ -859,6 +857,14 @@ Our Swarm is initiated, from the **worker nodes**, use the `join token worker` a
   set_fact:
     first_swarm_manager_host: "{{ groups['tag_SwarmType_manager'][0] }}"
 
+- name: 'set fact: list remote_addrs'
+  set_fact:
+    # Create a list of all managers' private ip addresse
+    list_remote_addrs: >-
+      {{ list_remote_addrs | default([]) }} + [ '{{ item }}:2377' ]
+  loop: >-
+    {{ groups['tag_SwarmType_manager'] | map('extract', hostvars, 'ec2_ip_address') | list }}
+
 - name: Joining worker to the swarm
   # https://docs.ansible.com/ansible/latest/modules/docker_swarm_module.html
   docker_swarm:
@@ -872,8 +878,7 @@ Our Swarm is initiated, from the **worker nodes**, use the `join token worker` a
     join_token: >-
       {{ hostvars[first_swarm_manager_host].join_token_worker }}
     # Using PRIVATE IP ADDRESS as they are in the same VPC
-    remote_addrs: 
-      - "{{ hostvars[first_swarm_manager_host].ec2_private_ip_address }}:2377"
+    remote_addrs: "{{ list_remote_addrs }}" 
 
 ```
 

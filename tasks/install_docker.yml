@@ -34,8 +34,6 @@
   # https://docs.ansible.com/ansible/latest/modules/apt_module.html
   apt:
     name:
-      # I had network issues with the version 19.03.2
-      # at the moment I write this article 
       - docker-ce
       - docker-ce-cli
       - containerd.io
