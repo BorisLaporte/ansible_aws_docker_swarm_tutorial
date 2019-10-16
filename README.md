@@ -825,7 +825,7 @@ Our Swarm is initiated, from the **worker nodes**, use the `join token worker` a
     list_remote_addrs: >-
       {{ list_remote_addrs | default([]) }} + [ '{{ item }}:2377' ]
   loop: >-
-    {{ groups['tag_SwarmType_manager'] | map('extract', hostvars, 'ec2_ip_address') | list }}
+    {{ groups['tag_SwarmType_manager'] | map('extract', hostvars, 'ec2_private_ip_address') | list }}
 
 - name: Joining worker to the swarm
   # https://docs.ansible.com/ansible/latest/modules/docker_swarm_module.html
