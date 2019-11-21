@@ -8,7 +8,7 @@ In this tutorial we'll be using [Ansible](https://docs.ansible.com/) to deploy a
 
 From the official documentation: *Ansible is an IT automation tool. It can configure systems, deploy software, and orchestrate more advanced IT tasks such as continuous deployments or zero downtime rolling updates. Ansible’s main goals are simplicity and ease-of-use.*
 
-[Ansible](https://docs.ansible.com/) scripts are meant to reach a specific `state` and not to do a list of `commands`. If you want to install `curl` on a server, [Ansible](https://docs.ansible.com/) will try to install curl ONLY IF it isn't installed yet.
+[Ansible](https://docs.ansible.com/) scripts are meant to reach a desired `state` and not to do a list of `commands`. If you wish to install `curl` on a server, [Ansible](https://docs.ansible.com/) will try to install curl ONLY IF it isn't installed yet.
 
 This is an ansible `task` which download a file at a specific `dest` with specific `user permissions`. And in case the file already exists at the desired `dest` it will only replace the file if the content has changed.
 
@@ -526,7 +526,7 @@ if you have any troubles or wish to know more about it, [here](https://aws.amazo
 Now create an `ansible.cfg` file at the root of our project to specify a few default options.
 
 ```bash
-# project/ansible.cfg
+# ansible.cfg
 [defaults]
 # (optional) the host check keys from ssh
 # is enabled by default and may causes
