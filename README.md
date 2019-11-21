@@ -8,7 +8,7 @@ In this tutorial we'll be using [Ansible](https://docs.ansible.com/) to deploy a
 
 From the official documentation: *Ansible is an IT automation tool. It can configure systems, deploy software, and orchestrate more advanced IT tasks such as continuous deployments or zero downtime rolling updates. Ansible’s main goals are simplicity and ease-of-use.*
 
-The biggest strength of [Ansible](https://docs.ansible.com/) is its **indempotency**. [Ansible](https://docs.ansible.com/) doesn't run a list of `commands` but rather a list of `desired states`.
+[Ansible](https://docs.ansible.com/) scripts are meant to reach a specific `state` and not to do a list of `commands`. If you want to install `curl` on a server, [Ansible](https://docs.ansible.com/) will try to install curl ONLY IF it isn't installed yet.
 
 This is an ansible `task` which download a file at a specific `dest` with specific `user permissions`. And in case the file already exists at the desired `dest` it will only replace the file if the content has changed.
 
@@ -32,7 +32,7 @@ When running an ansible script you'll see **statuses** such as `ok` or `changed`
 
 ### Docker swarm
 
-Docker swarm is an orchestration service. Easy to use, it allows us to run our webapps at scale at a production grade. You can see a summary list of its features [here](https://docs.docker.com/engine/swarm/).
+Docker swarm is an orchestration service. Easy to use, it allows us to run our webapps at scale in production. You can see a summary list of its features [here](https://docs.docker.com/engine/swarm/).
 
 Some ressources from Docker official documentation on how to setup and use Docker swarm:
 - https://docs.docker.com/engine/swarm/swarm-tutorial/
@@ -166,6 +166,8 @@ Because we have 4 clear steps, we will write a file for each with their belongin
 In AWS the security groups allow us to manage our ports. This is like a firewall around the server. It gives us features which make easier to manage our ports. 
 
 Create a folder `tasks`. Within it create a file named `create_security_groups.yml`.
+
+Do not worry about `"{{ VPC_ID }}"` this is a **variable** and we will see later how to set a **value** for it.
 
 ```yaml
 # tasks/create_security_groups.yml
@@ -448,7 +450,7 @@ Now that we have our architecture running we wish to deploy a docker **swarm clu
 
 ### Inventory
 
-In order to run our scripts against the desired servers Ansible uses an `inventory`. In simple, an `inventory` is where you store your **servers' ip addresses**. You name them, create groups, setup variables by hosts / groups, it has a lot of features. It can be a folder or file.
+In order to run our scripts against the desired servers Ansible uses an `inventory`. In short, an `inventory` is where you store your **servers' ip addresses**. You name them, create groups, setup variables by hosts / groups, it has a lot of features. It can be a folder or file.
 
 But in our case, we create our servers **dynamically**, which means each time we deploy new servers, their **ip address** changes. So we will use the **AWS ec2 plugin** which creates dynamic `hosts`.
 
@@ -565,7 +567,7 @@ ansible_ssh_private_key_file: "{{ KEY_PAIR_LOCAL_PATH }}"
 
 ```
 
-Those variables will be used ONLY when the `hosts` that belonged to the **ec2 group**.
+Those variables will be used ONLY by the `hosts` that belonged to the **ec2 group**.
 
 To check everything is setup correctly we'll write a little playbook. **Note** this test will work only if your servers are **online** and **running**.
 
@@ -1156,5 +1158,5 @@ There is many ways to achieve this. This article and this project were written f
 
 ### Docker swarm
 
-At [Seelk](https://www.seelk.co/) we use **Docker swarm** for our architecture. It provides us a resilient and stable architecture who is also easy to maintain.
-If you're interested to know more about **Docker swarm** you can find a very good (tutorial)[https://docs.docker.com/engine/swarm/swarm-tutorial/] on their website.
+At [Seelk](https://www.seelk.co/) we use **Docker swarm** for our architecture. It provides us a resilient and stable architecture which is also easy to maintain.
+If you're interested to know more about **Docker swarm** you can find a very good [tutorial](https://docs.docker.com/engine/swarm/swarm-tutorial/) on their website.
